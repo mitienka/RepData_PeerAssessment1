@@ -1,58 +1,62 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 Author: Frederic Grenier (mitienka)  
 
 ## Loading and preprocessing the data  
 
-```{r}
+
+```r
         activitydata <- read.csv(unz("activity.zip","activity.csv"))
 ```
 
 ## What is mean total number of steps taken per day?  
 
-```{r}
+
+```r
         library(plyr)
         dailysteps <- ddply(activitydata,.(date),summarize,dailytotal=sum(steps))
 
         hist(dailysteps$dailytotal, breaks=20, main="Histogram of Total number of steps taken each day", 
              xlab="Daily number of steps")        
-
-        meansteps <- mean(dailysteps$dailytotal,na.rm=TRUE)
-        mediansteps <- median(dailysteps$dailytotal,na.rm=TRUE)
-
-
 ```
 
-  The mean total number of steps taken per day is : **`r format(meansteps,scientific=FALSE)`**  
-  The median total number of steps taken per day is : **`r mediansteps`**  
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+
+```r
+        meansteps <- mean(dailysteps$dailytotal,na.rm=TRUE)
+        mediansteps <- median(dailysteps$dailytotal,na.rm=TRUE)
+```
+
+  The mean total number of steps taken per day is : **10766.19**  
+  The median total number of steps taken per day is : **10765**  
 
 ## What is the average daily activity pattern?  
 
-```{r}
+
+```r
         intervalsteps <- ddply(activitydata,.(interval),summarize,intervalmean=mean(steps,na.rm=TRUE))
         plot(intervalsteps$interval,intervalsteps$intervalmean,type="l",main="",xlab="Interval",ylab="Average number of steps")
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
+```r
         intervalMaxAverage <- intervalsteps[intervalsteps$intervalmean==max(intervalsteps$intervalmean),]$interval
 ```
 
-  The 5-minute interval containing the maximum number of steps, averaged across all days, is interval **`r intervalMaxAverage`**  
+  The 5-minute interval containing the maximum number of steps, averaged across all days, is interval **835**  
 
 
 ## Imputing missing values  
 
 ### Determining the total number of rows with missing data  
-```{r}
+
+```r
         compcases <- complete.cases(activitydata)
         incompleteRows <- length(compcases)-sum(compcases)
 ```
-  There is `r incompleteRows` rows with missing data.
+  There is 2304 rows with missing data.
 
-### Filling strategy  
-Since there is 8 entire days with missing values, we will use the mean of the 
-5-minute interval to fill the rows where no values were gathered.
+### Filling strategy
 
 
 
