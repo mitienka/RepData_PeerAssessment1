@@ -18,7 +18,7 @@ Author: Frederic Grenier (mitienka)
 
 ## What is mean total number of steps taken per day?  
 
-```{r}
+```{r HistogramDailySteps}
         library(plyr)
         dailysteps <- ddply(activitydata,.(date),summarize,dailytotal=sum(steps))
 
@@ -36,7 +36,7 @@ Author: Frederic Grenier (mitienka)
 
 ## What is the average daily activity pattern?  
 
-```{r}
+```{r DailyActivityPattern}
         intervalsteps <- ddply(activitydata,.(interval),summarize,
                                intervalmean=mean(steps,na.rm=TRUE))
         plot(intervalsteps$interval,intervalsteps$intervalmean,type="l",main="",
@@ -62,7 +62,7 @@ Author: Frederic Grenier (mitienka)
 Since there is 8 entire days with missing values, we will use the mean of the 
 5-minute interval to fill the rows where no values were recordered.
 
-The mean values for 5-minute interval is already stored in the *intervalsteps* data frame.
+The mean values for 5-minute interval is already stored in the `intervalsteps` data frame.
 
 ```{r}
 # For each row of the data frame with NA in steps, replace it with the 
@@ -83,19 +83,19 @@ The mean values for 5-minute interval is already stored in the *intervalsteps* d
         filleddata <-fillNA(activitydata,intervalsteps)
 ```
 
-The new dataset with missing data filled in is *filleddata*  
+The new dataset with missing data filled in is `filleddata`  
   
 ### Impact of imputing missing values
 
-```{r}
+```{r HistogramFilledValues}
         library(plyr)
         daystepsFilled <- ddply(filleddata,.(date),summarize,dailytotal=sum(steps))
 
         hist(daystepsFilled$dailytotal, breaks=12, main="Histogram of Total number of steps taken each day", 
              xlab="Daily number of steps", ylim=c(0,25))        
 
-        meanstepsF <- mean(daystepsFilled$dailytotal,na.rm=TRUE)
-        medianstepsF <- median(daystepsFilled$dailytotal,na.rm=TRUE)
+        meanstepsF <- mean(daystepsFilled$dailytotal)
+        medianstepsF <- median(daystepsFilled$dailytotal)
 
 
 ```
@@ -105,15 +105,78 @@ The new median total number of steps taken per day is :
 **`r format(medianstepsF,scientific=FALSE,nsmall=3)`**  
   
   
-The histogram remain similar except for the
-The days with the data filled in have a total number of steps equal to the 
-average number of steps in the original data set.  
-Thus, the mean remains the same as we have replaced days not accounted for with
-days having a total number of steps equal to the daily mean.
-The median is now equal to the mean.
+The distribution of the daily number of steps remain similar except that
+there is now 8 more days with a number of steps equal to the average.  
 
-Our method to fill in missing data increases the 
+The average number of steps remains the same but the median is now equal to the 
+mean in our data set.  
 
-
-
+The impact of the method used to imput missing data is an increase the weight of 
+the average values in the distribution of the total number of steps per day.  
+  
+  
+  
 ## Are there differences in activity patterns between weekdays and weekends?
+
+As I work in a non-English environment, I change the system locale to facilitate 
+readability.
+```{r ChangingLocale}
+        # Changing the locale to use the english weekdays
+        Sys.setlocale("LC_ALL","English")  
+```
+
+Adding factor variable weekday/weekend
+
+```{r WeekdaysValues}
+
+        # create character vector of weekdays
+        day <- weekdays(Sys.Date()+0:6)  
+
+        # convert vector to dataframe
+        weekdayDF <- data.frame(day)
+        weekdayDF$weektime <- 0
+
+        # loop to add the type of day : weekday/weekend
+        for(i in 1:nrow(weekdayDF)){
+                if(weekdayDF[i,]$day=="Sunday" | weekdayDF[i,]$day=="Saturday"){
+		        weekdayDF[i,]$weektime <- c("weekend")
+	        }
+	        else{
+		        weekdayDF[i,]$weektime <- c("weekday")
+	        }
+        }
+
+
+        # add new variable to data frame and loop to set it 
+        filleddata$weektime <- 0
+        for(i in 1:nrow(filleddata)){
+                filleddata[i,]$weektime <- 
+                        weekdayDF[weekdayDF$day==weekdays(filleddata[i,]$date),]$weektime
+        }
+
+        # average the total number of steps per interval across weekday/weekend
+        intervalStepsWeektime <- ddply(filleddata,.(interval,weektime),summarize,
+                               intervalmean=mean(steps))
+```
+
+Creation of the two-panel plot using the ggplot2 library.
+
+```{r WeekdaysActivityPattern}
+        # create panel plot of the activity pattern for weekday/weekend
+        library(ggplot2)  
+
+        activitypattern <- ggplot(intervalStepsWeektime, aes(interval,intervalmean))  
+
+        activitypattern + geom_line() + scale_x_continuous(breaks=seq(0,2400,300)) + facet_wrap(~weektime,nrow=2) + labs(title="Activity pattern", y="Average number of steps", x="Interval")
+
+
+```  
+  
+By looking at the above plot, one can conclude that the activity level per 
+interval varies between weekdays and weekends.
+
+For example, there is more activity before the 750 interval during weekdays. During 
+weekends, there is much more intervals with an average number of steps over 50.
+
+One might conclude that the person monitored has a sedentary job and is more active 
+during weekends.
